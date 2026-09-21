@@ -1,0 +1,78 @@
+== 512 256 ==
+Device: Tesla T4, 40 SMs
+Equations: 512   Grid: 2 blocks x 256 threads   Mean of 20 runs
+
+                   CPU (ms)   GPU (ms)    speedup
+no branching         0.0016     0.0043      0.38x
+branching            0.0019     0.0042      0.46x
+
+branch cost     GPU -2.17%   CPU 20.35%
+transfers       0.0337 ms up, 0.0219 ms down
+GPU round trip  0.0598 ms
+
+CSV,512,256,2,0.004274,0.004181,0.001615,0.001944,0.033696,0.021856
+== 65536 256 ==
+Device: Tesla T4, 40 SMs
+Equations: 65536   Grid: 256 blocks x 256 threads   Mean of 20 runs
+
+                   CPU (ms)   GPU (ms)    speedup
+no branching         0.2297     0.0052     44.07x
+branching            0.2339     0.0051     45.78x
+
+branch cost     GPU -1.96%   CPU 1.83%
+transfers       0.2594 ms up, 0.2546 ms down
+GPU round trip  0.5192 ms
+
+CSV,65536,256,256,0.005211,0.005109,0.229673,0.233867,0.259392,0.254592
+== 1048576 256 ==
+Device: Tesla T4, 40 SMs
+Equations: 1048576   Grid: 4096 blocks x 256 threads   Mean of 20 runs
+
+                   CPU (ms)   GPU (ms)    speedup
+no branching         3.7373     0.0662     56.43x
+branching            3.7982     0.0665     57.12x
+
+branch cost     GPU 0.39%   CPU 1.63%
+transfers       3.2318 ms up, 3.3276 ms down
+GPU round trip  6.6257 ms
+
+CSV,1048576,256,4096,0.066229,0.066490,3.737292,3.798173,3.231840,3.327648
+== 1048576 64 ==
+Device: Tesla T4, 40 SMs
+Equations: 1048576   Grid: 16384 blocks x 64 threads   Mean of 20 runs
+
+                   CPU (ms)   GPU (ms)    speedup
+no branching         2.4153     0.0663     36.45x
+branching            2.1678     0.0664     32.67x
+
+branch cost     GPU 0.14%   CPU -10.25%
+transfers       2.9827 ms up, 2.8092 ms down
+GPU round trip  5.8582 ms
+
+CSV,1048576,64,16384,0.066264,0.066355,2.415324,2.167837,2.982688,2.809216
+== 1048576 512 ==
+Device: Tesla T4, 40 SMs
+Equations: 1048576   Grid: 2048 blocks x 512 threads   Mean of 20 runs
+
+                   CPU (ms)   GPU (ms)    speedup
+no branching         2.8190     0.0665     42.41x
+branching            2.2772     0.0667     34.15x
+
+branch cost     GPU 0.31%   CPU -19.22%
+transfers       3.2296 ms up, 3.4189 ms down
+GPU round trip  6.7150 ms
+
+CSV,1048576,512,2048,0.066472,0.066680,2.819013,2.277236,3.229568,3.418912
+== 1048576 1024 ==
+Device: Tesla T4, 40 SMs
+Equations: 1048576   Grid: 1024 blocks x 1024 threads   Mean of 20 runs
+
+                   CPU (ms)   GPU (ms)    speedup
+no branching         2.5115     0.0671     37.46x
+branching            2.5398     0.0677     37.52x
+
+branch cost     GPU 0.96%   CPU 1.13%
+transfers       2.9764 ms up, 2.9063 ms down
+GPU round trip  5.9498 ms
+
+CSV,1048576,1024,1024,0.067054,0.067696,2.511542,2.539804,2.976448,2.906272

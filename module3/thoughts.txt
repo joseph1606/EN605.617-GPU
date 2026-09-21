@@ -1,0 +1,30 @@
+I solved a bunch of quadratic equations on the CPU and on a Tesla T4, with and
+without an if/else. The if/else checks whether the discriminant is negative,
+and I set up the data so every other equation goes the other way, so every
+warp splits in half.
+
+At 512 equations the CPU won, which makes sense since only 2 blocks ran and
+most of the GPU was sitting idle. Once there was real work the GPU took over,
+about 44x faster at 65K equations and 56x faster at 1M.
+
+The surprise was the data copying. At 1M the kernel only took about 0.07 ms,
+but copying the data over and back took around 6.5 ms. So if you count that,
+the GPU was actually slower than the CPU (6.6 ms vs 3.7 ms). For something
+this simple, moving the data costs way more than the math.
+
+I thought branching would slow the GPU down a lot because of warp divergence,
+but it barely did anything (within about 2%, under 1% at 1M). My guess is the
+kernel is memory bound. It's moving about 250 GB/s at 1M, which is close to
+the T4's limit, so the GPU is mostly waiting on memory and the extra work from
+the branch gets hidden. That's probably also why block size didn't matter,
+since 64 through 1024 all took about the same time.
+
+The CPU didn't really care about the branch either. The pattern just
+alternates, so the branch predictor gets it right every time. The CPU times
+also bounced around a lot between runs (2.2 to 3.8 ms for the same work),
+probably because Colab's CPU is shared, so I wouldn't read much into the CPU
+branch numbers.
+
+Overall the GPU is way faster at the actual math once there's enough work, but
+for a simple problem like this, the data transfers are what really decide
+whether it's worth it.
