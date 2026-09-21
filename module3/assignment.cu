@@ -1,11 +1,7 @@
 //Based on the work of Andrew Krepps
 //
-// Module 3: solves quadratic equations on the CPU and GPU, with and without
-// branching, and times all four.
-//
-// The branch is the formula's own: the discriminant's sign picks real roots or
-// a complex pair. Signs alternate between elements so that neighbouring
-// threads disagree and warps diverge.
+// Module 3: solves a batch of quadratic equations on the CPU and the GPU,
+// once without an if/else and once with one, and times each version.
 //
 // Usage: assignment.exe <total threads> <threads per block>
 
@@ -26,8 +22,7 @@
                      cudaGetErrorString(err));                                 \
              exit(EXIT_FAILURE); } } while (0)
 
-// fabsf clears a sign bit rather than testing it, so there is no conditional
-// here. No bounds check either: the grid covers the data exactly.
+// No bounds check needed, since the grid covers the data exactly.
 __global__ void solveBranchless(float* roots, const float* a, const float* b,
                                 const float* c)
 {
@@ -51,6 +46,7 @@ __global__ void solveBranching(float* roots, const float* a, const float* b,
     }
 }
 
+// CPU version of solveBranchless.
 static void solveBranchlessHost(float* roots, const float* a, const float* b,
                                 const float* c, int n)
 {
@@ -60,6 +56,7 @@ static void solveBranchlessHost(float* roots, const float* a, const float* b,
     }
 }
 
+// CPU version of solveBranching.
 static void solveBranchingHost(float* roots, const float* a, const float* b,
                                const float* c, int n)
 {
@@ -74,7 +71,9 @@ static void solveBranchingHost(float* roots, const float* a, const float* b,
     }
 }
 
-// Works backwards from a chosen discriminant: c = (b*b - disc) / (4a). 
+// Picks the discriminant first, then solves for c so that b*b - 4ac equals it.
+// Odd elements get a negative one, so neighbouring threads take different
+// sides of the if/else.
 static void generateData(float* a, float* b, float* c, int n)
 {
     srand(SEED);
@@ -191,6 +190,16 @@ int main(int argc, char** argv)
     CUDA_CHECK(cudaMalloc((void**)&dc, bytes));
     CUDA_CHECK(cudaMalloc((void**)&dRoots, bytes));
 
+    // Warm up: the first copy and first launch of each kernel pay one-time
+    // setup costs, so do them untimed.
+    CUDA_CHECK(cudaMemcpy(da, a, bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(db, b, bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(dc, c, bytes, cudaMemcpyHostToDevice));
+    solveBranchless<<<numBlocks, blockSize>>>(dRoots, da, db, dc);
+    solveBranching<<<numBlocks, blockSize>>>(dRoots, da, db, dc);
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
     cudaEvent_t t0, t1;
     CUDA_CHECK(cudaEventCreate(&t0));
     CUDA_CHECK(cudaEventCreate(&t1));
@@ -203,12 +212,6 @@ int main(int argc, char** argv)
     CUDA_CHECK(cudaEventSynchronize(t1));
     float upMs = 0.0f;
     CUDA_CHECK(cudaEventElapsedTime(&upMs, t0, t1));
-
-    // Warm up: CUDA loads module code on first use
-    solveBranchless<<<numBlocks, blockSize>>>(dRoots, da, db, dc);
-    solveBranching<<<numBlocks, blockSize>>>(dRoots, da, db, dc);
-    CUDA_CHECK(cudaGetLastError());
-    CUDA_CHECK(cudaDeviceSynchronize());
 
     // Both kernels run back to back so the GPU does not idle between them.
     float gpuPlain = timeKernel(false, dRoots, da, db, dc, numBlocks, blockSize);
