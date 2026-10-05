@@ -9,7 +9,8 @@ NVCC      ?= nvcc
 TARGET    := assignment.exe
 SOURCES   := assignment.cu
 CUDA_ARCH ?=
-NVCCFLAGS := -O2 -lineinfo $(CUDA_ARCH)
+TAPS      ?= 33
+NVCCFLAGS := -O2 -lineinfo -DTAPS_DEFAULT=$(TAPS) $(CUDA_ARCH)
 
 all: $(TARGET)
 

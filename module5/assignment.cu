@@ -12,7 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-static constexpr int TAPS = 33;
+#ifndef TAPS_DEFAULT
+#define TAPS_DEFAULT 33
+#endif
+static constexpr int TAPS = TAPS_DEFAULT;
 
 // Fixed problem size. The kernels use grid-stride loops, so changing the
 // thread count changes occupancy, not the amount of work.
