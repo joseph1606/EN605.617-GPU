@@ -1,0 +1,133 @@
+== 65536 256 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 256 blocks x 256 threads = 65536 threads
+[+] Shared memory for the shared variant: 1152 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.6695     50.12     1.00x    3.58e-07    PASS
+Constant            0.4442     75.54     1.51x    3.58e-07    PASS
+Register            0.4329     77.51     1.55x    3.58e-07    PASS
+Shared              0.6651     50.45     1.01x    3.58e-07    PASS
+Host (mapped)       2.7885     12.03     0.24x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,256,256,0.669531,0.444213,0.432920,0.665106,2.788504
+== 262144 256 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 1024 blocks x 256 threads = 262144 threads
+[+] Shared memory for the shared variant: 1152 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.4717     71.14     1.00x    3.58e-07    PASS
+Constant            0.3153    106.42     1.50x    3.58e-07    PASS
+Register            0.3149    106.55     1.50x    3.58e-07    PASS
+Shared              0.4707     71.28     1.00x    3.58e-07    PASS
+Host (mapped)       2.4523     13.68     0.19x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,256,1024,0.471701,0.315315,0.314930,0.470726,2.452277
+== 1048576 256 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 4096 blocks x 256 threads = 1048576 threads
+[+] Shared memory for the shared variant: 1152 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.4227     79.38     1.00x    3.58e-07    PASS
+Constant            0.2656    126.32     1.59x    3.58e-07    PASS
+Register            0.3039    110.40     1.39x    3.58e-07    PASS
+Shared              0.4099     81.86     1.03x    3.58e-07    PASS
+Host (mapped)       2.2316     15.04     0.19x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,256,4096,0.422718,0.265627,0.303938,0.409877,2.231603
+== 1048576 64 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 16384 blocks x 64 threads = 1048576 threads
+[+] Shared memory for the shared variant: 384 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.3561     94.22     1.00x    3.58e-07    PASS
+Constant            0.2328    144.14     1.53x    3.58e-07    PASS
+Register            0.2544    131.92     1.40x    3.58e-07    PASS
+Shared              0.3334    100.64     1.07x    3.58e-07    PASS
+Host (mapped)       2.9557     11.35     0.12x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,64,16384,0.356147,0.232794,0.254352,0.333422,2.955707
+== 1048576 128 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 8192 blocks x 128 threads = 1048576 threads
+[+] Shared memory for the shared variant: 640 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.3428     97.90     1.00x    3.58e-07    PASS
+Constant            0.2211    151.77     1.55x    3.58e-07    PASS
+Register            0.2448    137.09     1.40x    3.58e-07    PASS
+Shared              0.3189    105.24     1.07x    3.58e-07    PASS
+Host (mapped)       2.6124     12.84     0.13x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,128,8192,0.342755,0.221082,0.244758,0.318851,2.612426
+== 1048576 512 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 2048 blocks x 512 threads = 1048576 threads
+[+] Shared memory for the shared variant: 2176 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.3293    101.91     1.00x    3.58e-07    PASS
+Constant            0.2151    155.99     1.53x    3.58e-07    PASS
+Register            0.2494    134.52     1.32x    3.58e-07    PASS
+Shared              0.3685     91.05     0.89x    3.58e-07    PASS
+Host (mapped)       1.9910     16.85     0.17x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,512,2048,0.329269,0.215109,0.249446,0.368530,1.991040
+== 1048576 1024 ==
+[+] Device: Tesla T4, 40 SMs, 48 KB shared memory per block
+[+] Stencil: 33 taps over 4194304 samples
+[+] Grid: 1024 blocks x 1024 threads = 1048576 threads
+[+] Shared memory for the shared variant: 4224 bytes/block
+[+] Each time is the mean of 20 launches
+[+] NOTE: times cover the kernel only, not host transfers
+
+Memory           Time (ms)      GB/s   Speedup   Max error  Status
+--------------------------------------------------------------------
+Global              0.3300    101.67     1.00x    3.58e-07    PASS
+Constant            0.2077    161.52     1.59x    3.58e-07    PASS
+Register            0.2425    138.36     1.36x    3.58e-07    PASS
+Shared              0.4058     82.69     0.81x    3.58e-07    PASS
+Host (mapped)       1.8956     17.70     0.17x    3.58e-07    PASS
+--------------------------------------------------------------------
+[+] All variants matched the CPU reference
+
+CSV,1024,1024,0.330035,0.207741,0.242514,0.405776,1.895574
