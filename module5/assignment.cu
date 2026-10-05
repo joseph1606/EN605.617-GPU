@@ -1,9 +1,10 @@
-// Module 5: the same 9-tap stencil run five times, with one operand in a
+// Module 5: the same stencil run five times, with one operand in a
 // different CUDA memory space each pass, so host, global, constant,
 // shared and register memory can be timed against each other. All five
 // kernels call stencil_dot(), so only the memory space differs.
 //
 // Usage: assignment.exe [total_threads] [threads_per_block]
+// Build: make TAPS=<n> to change the filter width (default 33).
 
 #include <cuda_runtime.h>
 
@@ -12,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Filter width, and so the reuse factor: each input sample is read by
+// TAPS different output threads. Compile-time because it sizes the
+// constant and register coefficient arrays.
 #ifndef TAPS_DEFAULT
 #define TAPS_DEFAULT 33
 #endif
