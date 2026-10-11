@@ -1,21 +1,16 @@
-# Module 5: all five CUDA memory spaces, compared on one kernel.
-#
-# build.sh and run.sh live in the module5 child directory. run.sh takes
-# <total_threads> <threads_per_block>; the problem size is fixed in the
-# source, so varying the thread count changes occupancy, not workload.
+# Module 6: CUDA streams and events. run.sh takes <file_MB> <threads_per_block>;
+# every run compares 1, 2, 4 and 8 streams.
 
-folder: module5
+folder: module6
 
 build:
-  - []              # run build.sh once, no arguments
+  - []
 
 run:
-  # Three thread counts at a fixed block size.
-  - [65536, 256]
-  - [262144, 256]
-  - [1048576, 256]
-  # Five block sizes at a fixed thread count.
-  - [1048576, 64]
-  - [1048576, 128]
-  - [1048576, 512]
-  - [1048576, 1024]
+  # Two file sizes at a fixed block size
+  - [64, 256]
+  - [256, 256]
+  # Block sizes at a fixed file size
+  - [256, 128]
+  - [256, 512]
+  - [256, 1024]
