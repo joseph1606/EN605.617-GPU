@@ -17,6 +17,7 @@ constexpr int MAX_THREADS_PER_BLOCK = 1024;
 constexpr int NUM_TRIALS = 3;
 constexpr unsigned int SECRET_KEY = 0x5EC12E7u;
 constexpr unsigned int RANDOM_SEED = 42;
+constexpr int SAMPLE_WORDS = 4;
 
 #define CUDA_CHECK(call)                                                      \
     do {                                                                      \
@@ -142,6 +143,26 @@ bool verifyResults(const unsigned int *original, const unsigned int *encrypted,
     return changed && checksumsMatch && restored;
 }
 
+void printSample(const unsigned int *original, const unsigned int *encrypted,
+                 const unsigned int *roundTrip, const unsigned int *checksums)
+{
+    const unsigned int *rows[] = {original, encrypted, roundTrip};
+    const char *labels[] = {"Original ", "Encrypted", "Decrypted"};
+
+    printf("\nSample (first %d words of the file):\n", SAMPLE_WORDS);
+    for (int r = 0; r < 3; r++) {
+        printf("  %s:", labels[r]);
+        for (int w = 0; w < SAMPLE_WORDS; w++)
+            printf(" %08x", rows[r][w]);
+        printf("\n");
+    }
+
+    unsigned int cpuSum = 0;
+    for (unsigned int w = 0; w < CHUNK_WORDS; w++)
+        cpuSum += encrypted[w];
+    printf("Chunk 0 checksum: GPU %08x | CPU %08x\n", checksums[0], cpuSum);
+}
+
 int main(int argc, char **argv)
 {
     int fileMB = (argc > 1) ? atoi(argv[1]) : DEFAULT_FILE_MB;
@@ -164,11 +185,11 @@ int main(int argc, char **argv)
     size_t fileBytes = (size_t)p.numChunks * CHUNK_BYTES;
     size_t sumBytes = p.numChunks * sizeof(unsigned int);
 
-    cudaDeviceProp prop;
-    CUDA_CHECK(cudaGetDeviceProperties(&prop, 0));
-    printf("Device: %s | copy engines: %d\n", prop.name, prop.asyncEngineCount);
-    printf("File %d MB (%d chunks of %d MB) | %d threads per block\n\n",
-           fileMB, p.numChunks, chunkMB, threadsPerBlock);
+    int blocksPerKernel = (CHUNK_WORDS + threadsPerBlock - 1) / threadsPerBlock;
+
+    printf("%d MB file | %d threads per block\n", fileMB, threadsPerBlock);
+    printf("%d chunks of %d MB | %d blocks per kernel | averaged over %d trials\n\n",
+           p.numChunks, chunkMB, blocksPerKernel, NUM_TRIALS);
 
     // Pinned host memory so the async copies can overlap with kernels
     unsigned int *original, *encrypted, *roundTrip, *checksums, *roundTripSums;
@@ -191,12 +212,15 @@ int main(int argc, char **argv)
     // Warm-up so startup cost isn't in the 1-stream time
     runEncryption(p, 1, original, encrypted, checksums);
 
-    printf("Streams   Time (ms)   Throughput (GB/s)   Speedup   Check\n");
+    printf("Streams   Time (ms)   Throughput (GB/s)   Speedup   Saved vs 1 stream (ms)\n");
     bool allPassed = true;
     float baselineMs = 0.0f;
+    float fastestMs = 0.0f;
+    int fastestStreams = 1;
     for (int numStreams = 1; numStreams <= MAX_STREAMS; numStreams *= 2) {
         memset(encrypted, 0, fileBytes);
         memset(roundTrip, 0, fileBytes);
+        memset(checksums, 0, sumBytes);
 
         float totalMs = 0.0f;
         for (int t = 0; t < NUM_TRIALS; t++)
@@ -204,15 +228,24 @@ int main(int argc, char **argv)
         float ms = totalMs / NUM_TRIALS;
         if (numStreams == 1)
             baselineMs = ms;
+        if (numStreams == 1 || ms < fastestMs) {
+            fastestMs = ms;
+            fastestStreams = numStreams;
+        }
 
         // Encrypting the encrypted file again should give back the original
         runEncryption(p, numStreams, encrypted, roundTrip, roundTripSums);
-        bool passed = verifyResults(original, encrypted, roundTrip, checksums, p.numChunks);
-        allPassed = allPassed && passed;
+        allPassed = allPassed &&
+                    verifyResults(original, encrypted, roundTrip, checksums, p.numChunks);
 
-        printf("%7d   %9.2f   %17.2f   %6.2fx   %s\n", numStreams, ms,
-               fileBytes / (ms * 1.0e6), baselineMs / ms, passed ? "PASS" : "FAIL");
+        printf("%7d   %9.2f   %17.2f   %6.2fx   %22.2f\n", numStreams, ms,
+               fileBytes / (ms * 1.0e6), baselineMs / ms, baselineMs - ms);
     }
+
+    printf("\nFastest: %d streams (%.2fx)\n", fastestStreams, baselineMs / fastestMs);
+    printSample(original, encrypted, roundTrip, checksums);
+    printf("\nVerification: %s (data changed, checksums match, decrypting restores original)\n\n",
+           allPassed ? "PASS" : "FAIL");
 
     for (int s = 0; s < MAX_STREAMS; s++) {
         CUDA_CHECK(cudaStreamDestroy(p.streams[s]));
