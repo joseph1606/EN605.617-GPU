@@ -1,16 +1,13 @@
-# Module 6: CUDA streams and events. run.sh takes <file_MB> <threads_per_block>;
-# every run compares 1, 2, 4 and 8 streams.
+# Module 9: photo denoising with cuRAND noise and NPP filters/metrics.
+# run.sh takes <noise level 1-3> and runs every photo in images/.
 
-folder: module6
+folder: module9
 
 build:
   - []
 
 run:
-  # Two file sizes at a fixed block size
-  - [64, 256]
-  - [256, 256]
-  # Block sizes at a fixed file size
-  - [256, 128]
-  - [256, 512]
-  - [256, 1024]
+  # Light, medium and heavy noise
+  - [1]
+  - [2]
+  - [3]

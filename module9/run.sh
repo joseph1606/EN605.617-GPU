@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs every photo at the given noise level: ./run.sh <level 1-3> [seed]
+# Runs every photo at the given noise level: ./run.sh <level 1-3>
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p output
