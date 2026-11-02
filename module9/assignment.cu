@@ -60,8 +60,12 @@ Npp8u *readPgm(const char *path, int *w, int *h)
         exit(EXIT_FAILURE);
     }
     fgetc(f);
-    Npp8u *pixels = (Npp8u *)malloc((size_t)*w * *h);
-    fread(pixels, 1, (size_t)*w * *h, f);
+    size_t px = (size_t)*w * *h;
+    Npp8u *pixels = (Npp8u *)malloc(px);
+    if (fread(pixels, 1, px, f) != px) {
+        fprintf(stderr, "PGM %s is shorter than its header says\n", path);
+        exit(EXIT_FAILURE);
+    }
     fclose(f);
     return pixels;
 }
@@ -298,10 +302,11 @@ int main(int argc, char **argv)
     printf("%-11s %-10s  %-15s  %-15s  %-19s %s\n", "noise", "filter",
            "MAE", "PSNR (dB)", "SSIM", "GPU ms");
 
-    // Warm up both libraries so the first timed call is not inflated
-    addNoise(g, 0, 0);
-    for (int f = 0; f < TYPES; f++)
-        applyFilter(g, f);
+    // Warm up every noise and filter path so no timed call pays first use
+    for (int i = 0; i < TYPES; i++) {
+        addNoise(g, i, 0);
+        applyFilter(g, i);
+    }
     for (int n = 0; n < TYPES; n++)
         runNoise(g, n, level, name);
     release(g);
