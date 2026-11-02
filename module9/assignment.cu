@@ -239,6 +239,7 @@ void runNoise(Gpu &g, int type, int level, const char *name)
     double sum[ROWS][METRICS] = {}, sq[ROWS][METRICS] = {};
     for (int t = 0; t < TRIALS; t++) {
         CHECK(curandSetPseudoRandomGeneratorSeed(g.gen, SEEDS[t]));
+        CHECK(curandSetGeneratorOffset(g.gen, 0));
         for (int r = 0; r < ROWS; r++) {
             float ms;
             CHECK(cudaEventRecord(g.start));
