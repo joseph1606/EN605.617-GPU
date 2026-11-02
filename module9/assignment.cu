@@ -25,7 +25,7 @@
 constexpr int LEVELS = 3;
 constexpr int TYPES = 3;
 constexpr int ROWS = TYPES + 1;  // the noisy image plus each filter
-constexpr int METRICS = 3;       // MAE, PSNR, SSIM
+constexpr int METRICS = 4;       // MAE, PSNR, SSIM, GPU ms
 constexpr int TRIALS = 3;
 constexpr unsigned long long SEEDS[TRIALS] = {67ULL, 21ULL, 16ULL};
 constexpr float GAUSS_SIGMA[LEVELS] = {10.0f, 25.0f, 50.0f};  // gray levels
@@ -44,6 +44,7 @@ struct Gpu {
     NppiSize size;
     NppStreamContext ctx;
     curandGenerator_t gen;
+    cudaEvent_t start, stop;
     Npp8u *clean, *noisy, *out, *mask, *buf, *host;
     Npp32f *img32, *noise, *scores;
     Npp64f *l1;
@@ -126,6 +127,8 @@ Gpu setup(const Npp8u *pixels, int w, int h)
     CHECK(cudaMemcpy(g.clean, pixels, px, cudaMemcpyHostToDevice));
     g.host = (Npp8u *)malloc(px);
     CHECK(curandCreateGenerator(&g.gen, CURAND_RNG_PSEUDO_PHILOX4_32_10));
+    CHECK(cudaEventCreate(&g.start));
+    CHECK(cudaEventCreate(&g.stop));
     return g;
 }
 
@@ -214,29 +217,38 @@ void save(Gpu &g, const Npp8u *img, const char *name, int level,
 void printRow(const char *noise, const char *filter, const double *sum,
               const double *sq)
 {
+    const char *formats[METRICS] = {"  %6.2f +/- %-5.2f", "  %6.2f +/- %-5.2f",
+                                    "  %6.4f +/- %-7.4f", "  %6.3f +/- %.3f"};
     printf("%-11s %-10s", noise, filter);
     for (int k = 0; k < METRICS; k++) {
         double mean = sum[k] / TRIALS;
         double var = (sq[k] - TRIALS * mean * mean) / (TRIALS - 1);
-        printf(k == 2 ? "  %7.4f +/- %.4f" : "  %6.2f +/- %-5.2f", mean,
-               sqrt(std::max(var, 0.0)));
+        printf(formats[k], mean, sqrt(std::max(var, 0.0)));
     }
     printf("\n");
 }
 
-// Each seed adds fresh noise; the first seed's images are saved
+// Each seed adds fresh noise; the first seed's images are saved.
+// Row 0 times making the noise, the other rows time each filter.
 void runNoise(Gpu &g, int type, int level, const char *name)
 {
     double sum[ROWS][METRICS] = {}, sq[ROWS][METRICS] = {};
     for (int t = 0; t < TRIALS; t++) {
         CHECK(curandSetPseudoRandomGeneratorSeed(g.gen, SEEDS[t]));
-        addNoise(g, type, level - 1);
         for (int r = 0; r < ROWS; r++) {
-            if (r > 0)
+            float ms;
+            CHECK(cudaEventRecord(g.start));
+            if (r == 0)
+                addNoise(g, type, level - 1);
+            else
                 applyFilter(g, r - 1);
+            CHECK(cudaEventRecord(g.stop));
+            CHECK(cudaEventSynchronize(g.stop));
+            CHECK(cudaEventElapsedTime(&ms, g.start, g.stop));
             const Npp8u *img = r == 0 ? g.noisy : g.out;
             double m[METRICS];
             score(g, img, m);
+            m[3] = ms;
             for (int k = 0; k < METRICS; k++) {
                 sum[r][k] += m[k];
                 sq[r][k] += m[k] * m[k];
@@ -252,6 +264,8 @@ void runNoise(Gpu &g, int type, int level, const char *name)
 void release(Gpu &g)
 {
     curandDestroyGenerator(g.gen);
+    cudaEventDestroy(g.start);
+    cudaEventDestroy(g.stop);
     cudaFree(g.clean);
     cudaFree(g.noisy);
     cudaFree(g.out);
@@ -281,8 +295,13 @@ int main(int argc, char **argv)
     Gpu g = setup(pixels, w, h);
     printf("\n%s %dx%d  noise level %d  seeds %llu %llu %llu\n", name, w,
            h, level, SEEDS[0], SEEDS[1], SEEDS[2]);
-    printf("%-11s %-10s  %-15s  %-15s  %s\n", "noise", "filter", "MAE",
-           "PSNR (dB)", "SSIM");
+    printf("%-11s %-10s  %-15s  %-15s  %-19s %s\n", "noise", "filter",
+           "MAE", "PSNR (dB)", "SSIM", "GPU ms");
+
+    // Warm up both libraries so the first timed call is not inflated
+    addNoise(g, 0, 0);
+    for (int f = 0; f < TYPES; f++)
+        applyFilter(g, f);
     for (int n = 0; n < TYPES; n++)
         runNoise(g, n, level, name);
     release(g);
